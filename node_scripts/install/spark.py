@@ -77,8 +77,11 @@ def start_spark_master():
            str(config.spark_web_ui_port)]
     print("Starting master with '{0}'".format(" ".join(cmd)))
     call(cmd)
-
-    start_history_server()
+    try:
+        start_history_server()
+    except Exception as e:
+        print("Failed to start history server with the following exception:")
+        print(e)
 
 
 def start_history_server():
@@ -150,7 +153,7 @@ def copy_spark_env():
     spark_env_path_dest = os.path.join(spark_home, 'conf/spark-env.sh')
     copyfile(spark_env_path_src, spark_env_path_dest)
 
-    
+
 def copy_spark_defaults():
     spark_default_path_src = os.path.join(os.environ['DOCKER_WORKING_DIR'], 'conf/spark-defaults.conf')
     spark_default_path_dest = os.path.join(spark_home, 'conf/spark-defaults.conf')
@@ -181,6 +184,7 @@ def copy_jars():
 
 
 def parse_configuration_file(path_to_file: str):
+    try:
         file = open(path_to_file, 'r')
         properties = {}
         for line in file:
@@ -188,6 +192,9 @@ def parse_configuration_file(path_to_file: str):
                 split = line.split()
                 properties[split[0]] = split[1]
         return properties
+    except Exception as e:
+        print("Failed to parse configuration file:", path_to_file, "with error:")
+        print(e)
 
 
 def configure_history_server_log_path(path_to_log_file):
@@ -202,5 +209,8 @@ def configure_history_server_log_path(path_to_log_file):
             else:
                 print('Create direcotory {}.'.format(directory))
                 os.makedirs(directory)
+
+                # Make sure the directory can be accessed by all users
+                os.chmod(directory, mode=0o777)
         else:
             print('Skipping. The eventLog directory is not local.')
